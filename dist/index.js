@@ -52559,8 +52559,7 @@ const diff = await (0,_actions_exec__WEBPACK_IMPORTED_MODULE_1__.getExecOutput)(
   { silent: true }
 )
 
-;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`diff command: ${JSON.stringify(['diff', '--unified=0', '--', ...pullRequestFiles], null, 2)}`);
-(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`TEST CHANGE - Diff output: ${diff.stdout}`)
+;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`TDiff output: ${diff.stdout}`)
 
 // Create an array of changes from the diff output based on patches
 const parsedDiff = (0,parse_git_diff__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A)(diff.stdout)
@@ -52606,8 +52605,6 @@ const existingComments = (
   await octokit.pulls.listReviewComments({ owner, repo, pull_number })
 ).data
 
-;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Existing comments: ${JSON.stringify(existingComments, null, 2)}`);
-
 // Function to generate a unique key for a comment
 const generateCommentKey = (comment) =>
   `${comment.path}:${comment.line ?? ''}:${comment.start_line ?? ''}:${
@@ -52628,8 +52625,6 @@ const comments = changedFiles.flatMap(({ path, chunks }) =>
       fromFileRange.lines <= 1
         ? createSingleLineComment(path, fromFileRange, changes)
         : createMultiLineComment(path, fromFileRange, changes)
-
-    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`comment: ${JSON.stringify(comment, null, 2)}`);
 
     // Generate key for the new comment
     const commentKey = generateCommentKey(comment)
