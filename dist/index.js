@@ -52535,121 +52535,130 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .Eg({
-  userAgent: 'suggest-changes',
-})
+async function main() {
 
-const [owner, repo] = String(node_process__WEBPACK_IMPORTED_MODULE_3__.env.GITHUB_REPOSITORY).split('/')
+  const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .Eg({
+    userAgent: 'suggest-changes',
+  })
 
-/** @type {import("@octokit/webhooks-types").PullRequestEvent} */
-const eventPayload = JSON.parse(
-  (0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(String(node_process__WEBPACK_IMPORTED_MODULE_3__.env.GITHUB_EVENT_PATH), 'utf8')
-)
+  const [owner, repo] = String(node_process__WEBPACK_IMPORTED_MODULE_3__.env.GITHUB_REPOSITORY).split('/')
 
-const pull_number = Number(eventPayload.pull_request.number)
+  /** @type {import("@octokit/webhooks-types").PullRequestEvent} */
+  const eventPayload = JSON.parse(
+    (0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(String(node_process__WEBPACK_IMPORTED_MODULE_3__.env.GITHUB_EVENT_PATH), 'utf8')
+  )
 
-const pullRequestFiles = (
-  await octokit.pulls.listFiles({ owner, repo, pull_number })
-).data.map((file) => file.filename)
-
-// Get the diff between the head branch and the base branch (limit to the files in the pull request)
-const diff = await (0,_actions_exec__WEBPACK_IMPORTED_MODULE_1__.getExecOutput)(
-  'git',
-  ['diff', '--unified=0', '--', ...pullRequestFiles],
-  { silent: true }
-)
-
-;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`TDiff output: ${diff.stdout}`)
-
-// Create an array of changes from the diff output based on patches
-const parsedDiff = (0,parse_git_diff__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A)(diff.stdout)
-
-// Get changed files from parsedDiff (changed files have type 'ChangedFile')
-const changedFiles = parsedDiff.files.filter(
-  (file) => file.type === 'ChangedFile'
-)
-
-const generateSuggestionBody = (changes) => {
-  const suggestionBody = changes
-    .filter(({ type }) => type === 'AddedLine' || type === 'UnchangedLine')
-    .map(({ content }) => content)
-    .join('\n')
-  // Quadruple backticks allow for triple backticks in a fenced code block in the suggestion body
-  // https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks#fenced-code-blocks
-  return `\`\`\`\`suggestion\n${suggestionBody}\n\`\`\`\``
-}
-
-function createSingleLineComment(path, fromFileRange, changes) {
-  return {
-    path,
-    line: fromFileRange.start,
-    body: generateSuggestionBody(changes),
+  if (!eventPayload.pull_request) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)('Action is executed on non-pull request event')
+    return;
   }
-}
 
-function createMultiLineComment(path, fromFileRange, changes) {
-  return {
-    path,
-    start_line: fromFileRange.start,
-    // The last line of the chunk is the start line plus the number of lines in the chunk
-    // minus 1 to account for the start line being included in fromFileRange.lines
-    line: fromFileRange.start + fromFileRange.lines - 1,
-    start_side: 'RIGHT',
-    side: 'RIGHT',
-    body: generateSuggestionBody(changes),
+  const pull_number = Number(eventPayload.pull_request.number)
+
+  const pullRequestFiles = (
+    await octokit.pulls.listFiles({ owner, repo, pull_number })
+  ).data.map((file) => file.filename)
+
+  // Get the diff between the head branch and the base branch (limit to the files in the pull request)
+  const diff = await (0,_actions_exec__WEBPACK_IMPORTED_MODULE_1__.getExecOutput)(
+    'git',
+    ['diff', '--unified=0', '--', ...pullRequestFiles],
+    { silent: true }
+  )
+
+  ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Diff output: ${diff.stdout}`)
+
+  // Create an array of changes from the diff output based on patches
+  const parsedDiff = (0,parse_git_diff__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A)(diff.stdout)
+
+  // Get changed files from parsedDiff (changed files have type 'ChangedFile')
+  const changedFiles = parsedDiff.files.filter(
+    (file) => file.type === 'ChangedFile'
+  )
+
+  const generateSuggestionBody = (changes) => {
+    const suggestionBody = changes
+      .filter(({ type }) => type === 'AddedLine' || type === 'UnchangedLine')
+      .map(({ content }) => content)
+      .join('\n')
+    // Quadruple backticks allow for triple backticks in a fenced code block in the suggestion body
+    // https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks#fenced-code-blocks
+    return `\`\`\`\`suggestion\n${suggestionBody}\n\`\`\`\``
   }
-}
 
-// Fetch existing review comments
-const existingComments = (
-  await octokit.pulls.listReviewComments({ owner, repo, pull_number })
-).data
-
-// Function to generate a unique key for a comment
-const generateCommentKey = (comment) =>
-  `${comment.path}:${comment.line ?? ''}:${comment.start_line ?? ''}:${
-    comment.body
-  }`
-
-// Create a Set of existing comment keys for faster lookup
-const existingCommentKeys = new Set(existingComments.map(generateCommentKey))
-
-// Create an array of comments with suggested changes for each chunk of each changed file
-const comments = changedFiles.flatMap(({ path, chunks }) =>
-  chunks.flatMap(({ fromFileRange, changes }) => {
-    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Starting line: ${fromFileRange.start}`)
-    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Number of lines: ${fromFileRange.lines}`)
-    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Changes: ${JSON.stringify(changes)}`)
-
-    const comment =
-      fromFileRange.lines <= 1
-        ? createSingleLineComment(path, fromFileRange, changes)
-        : createMultiLineComment(path, fromFileRange, changes)
-
-    // Generate key for the new comment
-    const commentKey = generateCommentKey(comment)
-
-    // Check if the new comment already exists
-    if (existingCommentKeys.has(commentKey)) {
-      return []
+  function createSingleLineComment(path, fromFileRange, changes) {
+    return {
+      path,
+      line: fromFileRange.start,
+      body: generateSuggestionBody(changes),
     }
+  }
 
-    return [comment]
-  })
-)
+  function createMultiLineComment(path, fromFileRange, changes) {
+    return {
+      path,
+      start_line: fromFileRange.start,
+      // The last line of the chunk is the start line plus the number of lines in the chunk
+      // minus 1 to account for the start line being included in fromFileRange.lines
+      line: fromFileRange.start + fromFileRange.lines - 1,
+      start_side: 'RIGHT',
+      side: 'RIGHT',
+      body: generateSuggestionBody(changes),
+    }
+  }
 
-// Create a review with the suggested changes if there are any
-if (comments.length > 0) {
-  await octokit.pulls.createReview({
-    owner,
-    repo,
-    pull_number,
-    event: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('event').toUpperCase(),
-    body: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('comment'),
-    comments,
-  })
+  // Fetch existing review comments
+  const existingComments = (
+    await octokit.pulls.listReviewComments({ owner, repo, pull_number })
+  ).data
+
+  // Function to generate a unique key for a comment
+  const generateCommentKey = (comment) =>
+    `${comment.path}:${comment.line ?? ''}:${comment.start_line ?? ''}:${
+      comment.body
+    }`
+
+  // Create a Set of existing comment keys for faster lookup
+  const existingCommentKeys = new Set(existingComments.map(generateCommentKey))
+
+  // Create an array of comments with suggested changes for each chunk of each changed file
+  const comments = changedFiles.flatMap(({ path, chunks }) =>
+    chunks.flatMap(({ fromFileRange, changes }) => {
+      ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Starting line: ${fromFileRange.start}`)
+      ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Number of lines: ${fromFileRange.lines}`)
+      ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Changes: ${JSON.stringify(changes)}`)
+
+      const comment =
+        fromFileRange.lines <= 1
+          ? createSingleLineComment(path, fromFileRange, changes)
+          : createMultiLineComment(path, fromFileRange, changes)
+
+      // Generate key for the new comment
+      const commentKey = generateCommentKey(comment)
+
+      // Check if the new comment already exists
+      if (existingCommentKeys.has(commentKey)) {
+        return []
+      }
+
+      return [comment]
+    })
+  )
+
+  // Create a review with the suggested changes if there are any
+  if (comments.length > 0) {
+    await octokit.pulls.createReview({
+      owner,
+      repo,
+      pull_number,
+      event: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('event').toUpperCase(),
+      body: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('comment'),
+      comments,
+    })
+  }
 }
 
+await main();
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
 
