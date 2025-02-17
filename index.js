@@ -33,7 +33,7 @@ const diff = await getExecOutput(
 )
 
 debug(`diff command: ${JSON.stringify(['diff', '--unified=0', '--', ...pullRequestFiles], null, 2)}`);
-debug(`Diff output: ${diff.stdout}`)
+debug(`TEST CHANGE - Diff output: ${diff.stdout}`)
 
 // Create an array of changes from the diff output based on patches
 const parsedDiff = parseGitDiff(diff.stdout)
