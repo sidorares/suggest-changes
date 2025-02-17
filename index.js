@@ -79,6 +79,8 @@ const existingComments = (
   await octokit.pulls.listReviewComments({ owner, repo, pull_number })
 ).data
 
+debug(`Existing comments: ${JSON.stringify(existingComments, null, 2)`);
+
 // Function to generate a unique key for a comment
 const generateCommentKey = (comment) =>
   `${comment.path}:${comment.line ?? ''}:${comment.start_line ?? ''}:${
@@ -99,6 +101,8 @@ const comments = changedFiles.flatMap(({ path, chunks }) =>
       fromFileRange.lines <= 1
         ? createSingleLineComment(path, fromFileRange, changes)
         : createMultiLineComment(path, fromFileRange, changes)
+
+    debug(`comment: ${JSON.stringify(comment, null, 2)}`);
 
     // Generate key for the new comment
     const commentKey = generateCommentKey(comment)
