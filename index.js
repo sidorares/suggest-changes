@@ -32,6 +32,7 @@ const diff = await getExecOutput(
   { silent: true }
 )
 
+debug(`diff command: ${JSON.stringify(['diff', '--unified=0', '--', ...pullRequestFiles], null, 2)}`);
 debug(`Diff output: ${diff.stdout}`)
 
 // Create an array of changes from the diff output based on patches
