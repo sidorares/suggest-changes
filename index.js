@@ -118,17 +118,25 @@ async function main() {
     })
   )
 
+
+
   // Create a review with the suggested changes if there are any
   if (comments.length > 0) {
-    await octokit.pulls.createReview({
+    const review = {
       owner,
       repo,
       pull_number,
       event: getInput('event').toUpperCase(),
       body: getInput('comment'),
       comments,
-    })
+    };
+    debug(`Creting a review with suggestions: ${JSON.stringify(review, null, 2)}}`);
+    await octokit.pulls.createReview(review)
   }
 }
 
-await main();
+try {
+  await main();
+} catch(error) {
+  debug(`Unexpected error while running the action: ${err.message}\n${err.stack}`);
+}

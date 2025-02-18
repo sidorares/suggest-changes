@@ -52645,20 +52645,28 @@ async function main() {
     })
   )
 
+
+
   // Create a review with the suggested changes if there are any
   if (comments.length > 0) {
-    await octokit.pulls.createReview({
+    const review = {
       owner,
       repo,
       pull_number,
       event: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('event').toUpperCase(),
       body: (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('comment'),
       comments,
-    })
+    };
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Creting a review with suggestions: ${JSON.stringify(review, null, 2)}}`);
+    await octokit.pulls.createReview(review)
   }
 }
 
-await main();
+try {
+  await main();
+} catch(error) {
+  (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Unexpected error while running the action: ${err.message}\n${err.stack}`);
+}
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
 
