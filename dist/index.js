@@ -52665,7 +52665,7 @@ async function main() {
 try {
   await main();
 } catch(error) {
-  (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Unexpected error while running the action: ${err.message}\n${err.stack}`);
+  (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Unexpected error while running the action: ${error.message}\n${error.stack}`);
 }
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);

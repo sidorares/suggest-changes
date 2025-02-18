@@ -138,5 +138,5 @@ async function main() {
 try {
   await main();
 } catch(error) {
-  debug(`Unexpected error while running the action: ${err.message}\n${err.stack}`);
+  debug(`Unexpected error while running the action: ${error.message}\n${error.stack}`);
 }
