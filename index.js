@@ -94,7 +94,7 @@ async function main() {
   // Create a Set of existing comment keys for faster lookup
   const existingCommentKeys = new Set(existingComments.map(generateCommentKey))
 
-  const maxNumSuggestions = Number(getInput('max_num_suggestions'));
+  const maxNumSuggestions = Number(getInput('max_suggestions'));
 
   // Create an array of comments with suggested changes for each chunk of each changed file
   const comments = changedFiles.flatMap(({ path, chunks }) =>
