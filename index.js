@@ -85,6 +85,8 @@ async function main() {
     await octokit.pulls.listReviewComments({ owner, repo, pull_number })
   ).data
 
+  debug(`Existing comments: ${JSON.stringify(existingComments, null, 2)}`)
+
   // Function to generate a unique key for a comment
   const generateCommentKey = (comment) =>
     `${comment.path}:${comment.line ?? ''}:${comment.start_line ?? ''}:${
