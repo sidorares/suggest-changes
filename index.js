@@ -95,6 +95,7 @@ async function main() {
   const existingCommentKeys = new Set(existingComments.map(generateCommentKey))
 
   const maxNumSuggestions = Number(getInput('max_suggestions'));
+  debug(`Limiting to ${max_suggestions} suggestions`)
 
   // Create an array of comments with suggested changes for each chunk of each changed file
   const comments = changedFiles.flatMap(({ path, chunks }) =>
@@ -119,6 +120,8 @@ async function main() {
       return [comment]
     })
   ).slice(0, maxNumSuggestions);
+
+  debug(`Generated ${comments} comments`);
 
   // Create a review with the suggested changes if there are any
   if (comments.length > 0) {

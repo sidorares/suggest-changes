@@ -52622,11 +52622,12 @@ async function main() {
   const existingCommentKeys = new Set(existingComments.map(generateCommentKey))
 
   const maxNumSuggestions = Number((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_suggestions'));
+  (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Limiting to ${max_suggestions} suggestions`)
 
   // Create an array of comments with suggested changes for each chunk of each changed file
   const comments = changedFiles.flatMap(({ path, chunks }) =>
     chunks.flatMap(({ fromFileRange, changes }) => {
-      (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Starting line: ${fromFileRange.start}`)
+      ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Starting line: ${fromFileRange.start}`)
       ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Number of lines: ${fromFileRange.lines}`)
       ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Changes: ${JSON.stringify(changes)}`)
 
@@ -52646,6 +52647,8 @@ async function main() {
       return [comment]
     })
   ).slice(0, maxNumSuggestions);
+
+  (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Generated ${comments} comments`);
 
   // Create a review with the suggested changes if there are any
   if (comments.length > 0) {
